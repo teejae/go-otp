@@ -8,13 +8,14 @@ import (
 	"strconv"
 )
 
-// One Time Pad Generator.
+// One Time Password Generator.
 type Generator interface {
 	// generate human readable string, like "123456" or "A DOG WALKED ACROSS THE STREET"
 	Generate() string
 }
 
 // HMAC OTP implementation.
+// See: http://www.ietf.org/rfc/rfc4226.txt
 type HOTPCounter uint64
 type HOTPGenerator struct {
 	counter HOTPCounter
