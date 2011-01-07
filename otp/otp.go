@@ -3,15 +3,18 @@ package otp
 import (
 	"crypto/hmac"
 	"encoding/binary"
+	"fmt"
 	"hash"
 	"strconv"
 )
 
+// One Time Pad Generator.
 type Generator interface {
-	// generate human readable string
+	// generate human readable string, like "123456" or "A DOG WALKED ACROSS THE STREET"
 	Generate() string
 }
 
+// HMAC OTP implementation.
 type HOTPCounter uint64
 type HOTPGenerator struct {
 	counter HOTPCounter
@@ -31,12 +34,13 @@ func (g *HOTPGenerator) Generate() string {
 	binary.Write(hasher, binary.BigEndian, g.counter)
 	hashValue := hasher.Sum()
 	truncatedValue := dynamicTruncate(hashValue)
-	otpValue := truncatedValue % uint32((10 ^ g.digits))
+	otpValue := truncatedValue % uint32(pow(10, int64(g.digits)))
 	
 	// increment counter
 	g.counter++
 	
-	return strconv.Uitoa64(uint64(otpValue))
+	// want a value with a specific number of digits
+	return fmt.Sprintf("%0" + strconv.Itoa(g.digits) + "d", otpValue)
 }
 
 const (
@@ -44,15 +48,26 @@ const (
 	DYNAMIC_TRUNCATE_31_BIT_MASK uint32 = 0x7FFFFFFF
 )
 
+// HOTP's dynamic truncate.
 func dynamicTruncate(hashValue []byte) uint32 {
 	if len(hashValue) < 20 {
-		panic("the generated hash is too short!")
+		panic("the starting hash is too short!")
 	}
 	
 	offsetBits := hashValue[19] & DYNAMIC_TRUNCATE_OFFSET_BIT_MASK
 	// 0 <= offset <= 15
 	offset := uint8(offsetBits)
-	
-	p := binary.BigEndian.Uint32(hashValue[offset:offset + 4])
-	return p & DYNAMIC_TRUNCATE_31_BIT_MASK
+
+	bits := binary.BigEndian.Uint32(hashValue[offset:offset + 4])
+	truncated := bits & DYNAMIC_TRUNCATE_31_BIT_MASK
+	return truncated
+}
+
+// Computes base ** exp.
+func pow(base, exp int64) int64 {
+	product := int64(1)
+	for ; exp > 0; exp-- {
+		product *= base
+	}
+	return product
 }
