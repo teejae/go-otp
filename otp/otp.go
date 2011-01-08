@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash"
 	"strconv"
+	"time"
 )
 
 // One Time Password Generator.
@@ -22,16 +23,6 @@ type hotpGenerator struct {
 	counter hotpCounter
 	digits  int
 	hasher  hash.Hash
-}
-
-type hotpCounterImpl struct {
-	nextCounter uint64
-}
-
-func (c *hotpCounterImpl) next() uint64 {
-	nextCounter := c.nextCounter
-	c.nextCounter++
-	return nextCounter
 }
 
 // HMAC OTP implementation.
@@ -74,6 +65,34 @@ func dynamicTruncate(hashValue []byte) uint32 {
 	bits := binary.BigEndian.Uint32(hashValue[offset : offset+4])
 	truncated := bits & DYNAMIC_TRUNCATE_31_BIT_MASK
 	return truncated
+}
+
+// Simple counter.
+type hotpCounterImpl struct {
+	nextCounter uint64
+}
+
+func (c *hotpCounterImpl) next() uint64 {
+	nextCounter := c.nextCounter
+	c.nextCounter++
+	return nextCounter
+}
+
+// Time-based OTP implementation.
+// See: http://www.ietf.org/rfc/rfc4226.txt
+func NewTOTPGenerator(secretKey []byte, initSeconds int64, timeStepSeconds uint64, digits int) Generator {
+	// use hotpGenerator, with a time-based counter
+	return &hotpGenerator{counter: &totpCounter{initSeconds: initSeconds, timeStepSeconds: timeStepSeconds}, digits: digits, hasher: hmac.NewSHA1(secretKey)}
+}
+
+type totpCounter struct {
+	initSeconds     int64
+	timeStepSeconds uint64
+}
+
+func (c *totpCounter) next() uint64 {
+	diffSeconds := uint64(time.Seconds() - c.initSeconds)
+	return diffSeconds / c.timeStepSeconds
 }
 
 // Computes base ** exp.
