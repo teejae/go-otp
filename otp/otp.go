@@ -23,7 +23,7 @@ type HOTPGenerator struct {
 	hasher  hash.Hash
 }
 
-func NewHOTPGenerator(secretKey []byte, initCounter HOTPCounter, digits int) *HOTPGenerator {
+func NewHOTPGenerator(secretKey []byte, initCounter HOTPCounter, digits int) Generator {
 	return &HOTPGenerator{counter: initCounter, digits: digits, hasher: hmac.NewSHA1(secretKey)}
 }
 
