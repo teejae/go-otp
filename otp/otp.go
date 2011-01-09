@@ -79,7 +79,7 @@ func (c *hotpCounterImpl) next() uint64 {
 }
 
 // Time-based OTP implementation.
-// See: http://www.ietf.org/rfc/rfc4226.txt
+// See: http://tools.ietf.org/id/draft-mraihi-totp-timebased-06.txt
 func NewTOTPGenerator(secretKey []byte, initSeconds int64, timeStepSeconds uint64, digits int) Generator {
 	// use hotpGenerator, with a time-based counter
 	return &hotpGenerator{counter: &totpCounter{initSeconds: initSeconds, timeStepSeconds: timeStepSeconds}, digits: digits, hasher: hmac.NewSHA1(secretKey)}
